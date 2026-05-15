@@ -301,7 +301,42 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
             user
         )
     )
+})
 
+// Update User Cover Image Controller.
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+    // Get the User Data From the Frontend.
+    const coverImageLocalPath = req.file?.path
+    // Validate the User Data.
+    if (!coverImageLocalPath) { throw new apiError("Cover Image is Required", 400); }
+    // Upload the image cloudinary and get the URL.
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+    if (!coverImage.url) { throw new apiError("Failed to Upload Cover Image", 500); }
+    // Update the user cover image in the database.
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                coverImage : coverImage.url
+            }
+        },
+        {new : true}
+    ).select("-password -refreshToken");
+
+    // Check if the user is updated successfully.
+    if (!user) {
+        throw new apiError("Failed to Update User Cover Image", 500);
+    }
+    // Return the response.
+    return res
+    .status(200)
+    .json(
+        new apiResponse(
+            200,
+            "User Cover Image Updated Successfully",
+            user
+        )
+    )
 
 })
 
