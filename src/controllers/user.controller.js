@@ -1,3 +1,4 @@
+// Importing the required modules and models.
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../model/user.model.js";
 import { apiError } from "../utils/apiError.js";
@@ -191,10 +192,125 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         }
     })
 
+// Change Current Password Controller.
+const changeCurrentPassword = asyncHandler(async (req, res) =>{
+    // Get the User Data From the Frontend.
+    const { oldPassword, newPassword } = req.body;
+
+    const user = await User.findById(req.user?._id)
+
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+    // Check if the old password is correct.
+    if (!isPasswordCorrect){ throw new apiError("Old Password is Incorrect", 400); }
+    // Update the password.
+    user.password = newPassword;
+    await user.save({ validateBeforeSave: false });
+    // Return the response.
+    return res
+    .status(200)
+    .json(
+        new apiResponse(
+            200,
+            "Password Changed Successfully",
+            {}
+        )
+    )
+})
+
+// Get Current User Controller.
+const getCurrentUser = asyncHandler(async (req, res) =>{
+    return res
+    .status(200)
+    .json(
+        new apiResponse(
+            200,
+            "Current User Fetched Succesfully",
+            req.user
+        )
+    )
+})
+
+// Update User Profile Controller.
+const updateUserProfile = asyncHandler(async (req, res) => {
+    // Get the User Data From the Frontend.
+    const { fullName, username, email } = req.body;
+    // Validate the User Data.
+    if (!fullName || !username || !email) { throw new apiError("All Fields are Required", 400); }
+    // Update the user profile in the database.
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                fullName,
+                username: username.toLowerCase(),
+                email
+            }
+        },
+        {new : true}
+    ).select("-password -refreshToken");
+
+    // Check if the user is updated successfully.
+    if (!user) {
+        throw new apiError("Failed to Update User Profile", 500);
+    }
+
+    // Return the response.
+    return res
+    .status(200)
+    .json(
+        new apiResponse(
+            200,
+            "User Profile Updated Successfully",
+            user
+        )
+    )
+})
+
+// Update User Avatar Controller.
+const updateUserAvatar = asyncHandler(async (req, res) => {
+    // Get the User Data From the Frontend.
+    const avatarLocalPath = req.file?.path
+    // Validate the User Data.
+    if (!avatarLocalPath) { throw new apiError("Avatar Image is Required", 400); }
+    // Upload the image cloudinary and get the URL.
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    if (!avatar.url) { throw new apiError("Failed to Upload Avatar Image", 500); }
+    // Update the user avatar in the database.
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                avatar : avatar.url
+            }
+        },
+        {new : true}
+    ).select("-password -refreshToken");
+
+    // Check if the user is updated successfully.
+    if (!user) {
+        throw new apiError("Failed to Update User Avatar", 500);
+    }
+    // Return the response.
+    return res
+    .status(200)
+    .json(
+        new apiResponse(
+            200,
+            "User Avatar Updated Successfully",
+            user
+        )
+    )
+
+
+})
+
+// Exporting the controllers.
 export { 
     registerUser,
     loginUser,
     logoutUser,
     refreshAccessToken,
-
+    changeCurrentPassword,
+    getCurrentUser,
 };
