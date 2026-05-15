@@ -20,7 +20,7 @@ const generateTokens = async (userId) => {
         return { accessToken, refreshToken };
 
     } catch (error) {
-        throw new apiError("Failed to Generate Tokens", 500);
+        throw new apiError(500, "Failed to Generate Tokens");
     }
 };
 
@@ -31,27 +31,27 @@ const registerUser = asyncHandler(async (req, res) =>{
     
     // Validate the User Data.
     if (!fullName || !username || !email || !password) {
-        throw new apiError("All Fields are Required", 400);
+        throw new apiError(400, "All Fields are Required");
     }
 
     // Check if the User Already Exists. - username or email.
     const existedUser = await User.findOne({
         $or: [{username: username}, {email: email}]
     });
-    if (existedUser) { throw new apiError("User Already Exists", 409); }
+    if (existedUser) { throw new apiError(409, "User Already Exists"); }
 
     // Check for image upload and save the image to the server or cloud storage.
     const avartarLocalPath = req.files?.avatar[0]?.path;
     const coverImageLocalPath = req.files?.coverImage[0]?.path || null;
     if (!avartarLocalPath) {
-        throw new apiError("Avatar Image is Required", 400);
+        throw new apiError(400, "Avatar Image is Required");
     }
 
     // Upload the image cloudinary and get the URL.
     const avatar = await uploadOnCloudinary(avartarLocalPath);
     const coverImage = await uploadOnCloudinary(coverImageLocalPath);
     if (!avatar) {
-        throw new apiError("Failed to Upload Avatar Image", 500);
+        throw new apiError(500, "Failed to Upload Avatar Image");
     }
 
     // create a new user object with the data and the image URL.
@@ -68,7 +68,7 @@ const registerUser = asyncHandler(async (req, res) =>{
     const createdUser = await User.findById(user._id).select("-password -refreshToken");
     // check for user creation.
     if (!createdUser) {
-        throw new apiError("Failed to Create User", 500);
+        throw new apiError(500, "Failed to Create User");
     }
     // return the response.
     return res.status(201).json(
@@ -82,7 +82,7 @@ const loginUser = asyncHandler(async (req, res) => {
     const { username, email, password } = req.body;
     // We can login with either username or email.
     if (!(username || email)) {
-        throw new apiError("Username or Email is Required", 400);
+        throw new apiError(400, "Username or Email is Required");
     }
     // So we will check for both username and email in the database.
 
@@ -90,10 +90,10 @@ const loginUser = asyncHandler(async (req, res) => {
         $or: [{username},{email}]
     });
 
-    if (!user) { throw new apiError("User Not Found", 404); }
+    if (!user) { throw new apiError(404, "User Not Found"); }
     // And we will also check for the password.
     const isPasswordCorrect = await user.isPasswordCorrect(password);
-    if (!isPasswordCorrect) { throw new apiError("Password is Invalid", 404); }
+    if (!isPasswordCorrect) { throw new apiError(404, "Password is Invalid"); }
     
     // Generate Access Token and Refresh Token for the User.
     const { accessToken, refreshToken } = await generateTokens(user._id);
@@ -202,7 +202,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) =>{
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
     // Check if the old password is correct.
-    if (!isPasswordCorrect){ throw new apiError("Old Password is Incorrect", 400); }
+    if (!isPasswordCorrect){ throw new apiError(400, "Old Password is Incorrect"); }
     // Update the password.
     user.password = newPassword;
     await user.save({ validateBeforeSave: false });
@@ -236,7 +236,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     // Get the User Data From the Frontend.
     const { fullName, username, email } = req.body;
     // Validate the User Data.
-    if (!fullName || !username || !email) { throw new apiError("All Fields are Required", 400); }
+    if (!fullName || !username || !email) { throw new apiError(400, "All Fields are Required"); }
     // Update the user profile in the database.
     const user = await User.findByIdAndUpdate(
         req.user?._id,
@@ -252,7 +252,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 
     // Check if the user is updated successfully.
     if (!user) {
-        throw new apiError("Failed to Update User Profile", 500);
+        throw new apiError(500, "Failed to Update User Profile");
     }
 
     // Return the response.
@@ -272,10 +272,10 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     // Get the User Data From the Frontend.
     const avatarLocalPath = req.file?.path
     // Validate the User Data.
-    if (!avatarLocalPath) { throw new apiError("Avatar Image is Required", 400); }
+    if (!avatarLocalPath) { throw new apiError(400, "Avatar Image is Required"); }
     // Upload the image cloudinary and get the URL.
     const avatar = await uploadOnCloudinary(avatarLocalPath);
-    if (!avatar.url) { throw new apiError("Failed to Upload Avatar Image", 500); }
+    if (!avatar.url) { throw new apiError(500, "Failed to Upload Avatar Image"); }
     // Update the user avatar in the database.
     const user = await User.findByIdAndUpdate(
         req.user?._id,
@@ -289,7 +289,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
     // Check if the user is updated successfully.
     if (!user) {
-        throw new apiError("Failed to Update User Avatar", 500);
+        throw new apiError(500, "Failed to Update User Avatar");
     }
     // Return the response.
     return res
@@ -308,10 +308,10 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     // Get the User Data From the Frontend.
     const coverImageLocalPath = req.file?.path
     // Validate the User Data.
-    if (!coverImageLocalPath) { throw new apiError("Cover Image is Required", 400); }
+    if (!coverImageLocalPath) { throw new apiError(400, "Cover Image is Required"); }
     // Upload the image cloudinary and get the URL.
     const coverImage = await uploadOnCloudinary(coverImageLocalPath);
-    if (!coverImage.url) { throw new apiError("Failed to Upload Cover Image", 500); }
+    if (!coverImage.url) { throw new apiError(500, "Failed to Upload Cover Image"); }
     // Update the user cover image in the database.
     const user = await User.findByIdAndUpdate(
         req.user?._id,
@@ -325,7 +325,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
     // Check if the user is updated successfully.
     if (!user) {
-        throw new apiError("Failed to Update User Cover Image", 500);
+        throw new apiError(500, "Failed to Update User Cover Image");
     }
     // Return the response.
     return res
