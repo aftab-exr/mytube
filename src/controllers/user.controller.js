@@ -60,7 +60,7 @@ const registerUser = asyncHandler(async (req, res) =>{
         username: username.toLowerCase(),
         email,
         password,
-        avatar: avatar.secure_url,
+        avatarUrl: avatar.secure_url,
         coverImage: coverImage?.secure_url || ""
     });
     
@@ -148,7 +148,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 // Refresh Access Token Controller.
 const refreshAccessToken = asyncHandler(async (req, res) => {
     // Get the Refresh Token from the cookies or headers or body or query.
-    const incomingRefreshToken = req.cookies?.refreshToken || req.headers("Authorization")?.replace("Bearer ", "") || req.body?.refreshToken || req.query?.refreshToken
+    const incomingRefreshToken = req.cookies?.refreshToken || req.header("Authorization")?.replace("Bearer ", "") || req.body?.refreshToken || req.query?.refreshToken
 
     // Check if the Refresh Token is valid.
     if (!incomingRefreshToken) {
@@ -179,7 +179,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             secure: true   
         };
     
-        await generateTokens(user._id);
+        const { accessToken, refreshToken } = await generateTokens(user._id);
     
         return res.status(200)
         .cookie("accessToken", accessToken, cookieOptions)
